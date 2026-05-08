@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上班打卡</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F2ED;
+    --surface: #FFFFFF;
+    --border: #E0DAD0;
+    --text: #1A1714;
+    --muted: #7A7268;
+    --green: #3B6D11;
+    --green-light: #EAF3DE;
+    --green-mid: #639922;
+    --green-hover: #C0DD97;
+    --accent: #1A1714;
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .wrap {
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 2px;
+  }
+
+  .app-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+  }
+
+  .app-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  .stat-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .stat-unit {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .checkin-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .checkin-btn:hover { background: #F0EDE8; }
+
+  .checkin-btn.checked {
+    background: var(--green-light);
+    border-color: var(--green-mid);
+    color: var(--green);
+  }
+
+  .checkin-btn.checked:hover { background: var(--green-hover); }
+
+  .undo-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -8px;
+  }
+
+  .undo-btn {
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+
+  .undo-btn:hover { color: var(--text); }
+
+  .toast {
+    font-size: 13px;
+    color: var(--green);
+    background: var(--green-light);
+    border: 1px solid var(--green-mid);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    text-align: center;
+    display: none;
+    font-weight: 500;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-nav {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cal-nav:hover { background: var(--bg); }
+
+  .cal-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .cal-weekrow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-dayname {
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cal-row { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .cal-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+
+  .cal-cell {
+    text-align: center;
+    padding: 11px 4px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.1s;
+    user-select: none;
+    position: relative;
+  }
+
+  .cal-cell:hover { background: #F5F2ED; }
+  .cal-cell.other { color: #C8C2B8; pointer-events: none; }
+  .cal-cell.future { color: #C8C2B8; pointer-events: none; }
+
+  .cal-cell.checked {
+    background: var(--green-light);
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  .cal-cell.checked:hover { background: var(--green-hover); }
+
+  .cal-cell.today::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--green-mid);
+  }
+
+  .cal-cell.today { font-weight: 500; }
+
+  .dots-section { padding: 14px 16px; }
+
+  .dots-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.3px;
+  }
+
+  .dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    background: var(--border);
+  }
+
+  .dot.on { background: var(--green-mid); }
+  .dot.today-on { background: var(--green-hover); border: 1.5px solid var(--green-mid); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="app-title">check-in</div>
+    <div class="app-date" id="today-label"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">累計天數</div>
+      <div class="stat-num" id="total">0<span class="stat-unit"> 天</span></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">本月出勤</div>
+      <div class="stat-num" id="month">0<span class="stat-unit"> 天</span></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">連續天數</div>
+      <div class="stat-num" id="streak">0<span class="stat-unit"> 天</span></div>
+    </div>
+  </div>
+
+  <button class="checkin-btn" id="checkin-btn" onclick="toggle(todayStr)">打卡上班</button>
+
+  <div class="undo-row">
+    <button class="undo-btn" id="undo-btn" style="display:none" onclick="toggle(todayStr)">撤銷今天打卡</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="card">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="prevMonth()">←</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button class="cal-nav" onclick="nextMonth()">→</button>
+    </div>
+    <div id="calendar"></div>
+    <div class="dots-section">
+      <div class="dots-label">recent 30 days</div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const KEY = 'checkin_v1';
+let records = JSON.parse(localStorage.getItem(KEY) || '[]');
+let vy, vm, toastTimer;
+
+const today = new Date();
+const todayStr = fmtDate(today);
+vy = today.getFullYear();
+vm = today.getMonth();
+
+document.getElementById('today-label').textContent = todayStr;
+
+function fmtDate(d) {
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+function save() { localStorage.setItem(KEY, JSON.stringify(records)); }
+
+function toggleToday() { toggle(todayStr); }
+
+function toggle(ds) {
+  if (ds > todayStr) return;
+  const i = records.indexOf(ds);
+  if (i >= 0) {
+    records.splice(i, 1);
+    toast(ds === todayStr ? '已撤銷今天打卡' : '已取消 ' + ds);
+  } else {
+    records.push(ds);
+    toast(ds === todayStr ? '打卡成功！' : '已補打卡：' + ds);
+  }
+  save();
+  render();
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = 'none', 2500);
+}
+
+function calcStreak() {
+  let s = 0;
+  const d = new Date(today);
+  for (let i = 0; i < 365; i++) {
+    const ds = fmtDate(d);
+    if (records.includes(ds)) { s++; d.setDate(d.getDate()-1); }
+    else if (i === 0) { d.setDate(d.getDate()-1); }
+    else break;
+  }
+  return s;
+}
+
+function render() {
+  const checked = records.includes(todayStr);
+  const btn = document.getElementById('checkin-btn');
+  btn.textContent = checked ? '今天已打卡 ✓' : '打卡上班';
+  btn.className = 'checkin-btn' + (checked ? ' checked' : '');
+  document.getElementById('undo-btn').style.display = checked ? 'inline' : 'none';
+
+  document.getElementById('total').innerHTML = records.length + '<span class="stat-unit"> 天</span>';
+  const ym = todayStr.slice(0,7);
+  document.getElementById('month').innerHTML = records.filter(r=>r.startsWith(ym)).length + '<span class="stat-unit"> 天</span>';
+  document.getElementById('streak').innerHTML = calcStreak() + '<span class="stat-unit"> 天</span>';
+
+  renderCal();
+  renderDots();
+}
+
+function renderCal() {
+  document.getElementById('cal-title').textContent = vy + ' / ' + pad(vm+1);
+  const startDow = new Date(vy, vm, 1).getDay();
+  const dim = new Date(vy, vm+1, 0).getDate();
+  let cells = [];
+  for (let i = 0; i < startDow; i++) cells.push({ d: new Date(vy, vm, -startDow+i+1), other: true });
+  for (let i = 1; i <= dim; i++) cells.push({ d: new Date(vy, vm, i), other: false });
+  while (cells.length % 7 !== 0) { const last = cells[cells.length-1].d; const nd = new Date(last); nd.setDate(nd.getDate()+1); cells.push({ d: nd, other: true }); }
+
+  const days = ['日','一','二','三','四','五','六'];
+  let html = '<div class="cal-weekrow">' + days.map(d=>`<div class="cal-dayname">${d}</div>`).join('') + '</div>';
+
+  for (let r = 0; r < cells.length/7; r++) {
+    html += '<div class="cal-row">';
+    for (let c = 0; c < 7; c++) {
+      const cell = cells[r*7+c];
+      const ds = fmtDate(cell.d);
+      const isFuture = ds > todayStr;
+      const isChecked = records.includes(ds);
+      const isToday = ds === todayStr;
+      let cls = 'cal-cell';
+      if (cell.other) cls += ' other';
+      else if (isFuture) cls += ' future';
+      if (isChecked) cls += ' checked';
+      if (isToday) cls += ' today';
+      const onclick = (!cell.other && !isFuture) ? ` onclick="toggle('${ds}')"` : '';
+      html += `<div class="${cls}"${onclick}>${cell.d.getDate()}</div>`;
+    }
+    html += '</div>';
+  }
+  document.getElementById('calendar').innerHTML = html;
+}
+
+function renderDots() {
+  let html = '';
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const ds = fmtDate(d);
+    const on = records.includes(ds);
+    const isToday = ds === todayStr;
+    html += `<div class="dot${on ? (isToday ? ' today-on' : ' on') : ''}"></div>`;
+  }
+  document.getElementById('dots').innerHTML = html;
+}
+
+function prevMonth() { vm--; if (vm<0){vm=11;vy--;} renderCal(); }
+function nextMonth() { vm++; if (vm>11){vm=0;vy++;} renderCal(); }
+
+render();
+</script>
+</body>
+</html>
